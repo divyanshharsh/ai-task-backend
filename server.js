@@ -1,36 +1,36 @@
 const { Server } = require("socket.io");
+const express = require("express");
+const cors = require("cors");
 
-const io = new Server(4000, {
-  cors: { origin: "http://localhost:3000" },
+const app = express();
+app.use(cors({ origin: "https://ai-task-manager-ten.vercel.app/" })); // ✅ Allow frontend to connect
+
+const server = app.listen(4000, () => {
+  console.log("Server running on port 4000");
 });
 
-let tasks = [
-  { id: 1, title: "Complete UI Design", completed: false },
-  { id: 2, title: "Integrate JWT Auth", completed: false },
-  { id: 3, title: "Connect WebSockets", completed: true },
-];
+const io = new Server(server, {
+  cors: { origin: "https://ai-task-manager-ten.vercel.app/" }, // ✅ Allow WebSocket connections from frontend
+});
+
+let tasks = []; // ✅ Ensure tasks persist for all clients
 
 io.on("connection", (socket) => {
-  console.log("New client connected");
+  console.log("Client connected");
 
-  // Send initial task list
-  socket.emit("taskList", tasks);
+  socket.emit("taskList", tasks); // ✅ Send current tasks when a client connects
 
-  // Handle new task
   socket.on("newTask", (task) => {
     tasks.push(task);
-    io.emit("taskList", tasks); // Broadcast updated list
+    io.emit("taskList", tasks); // ✅ Broadcast updated task list to all clients
   });
 
-  // Handle task deletion
   socket.on("deleteTask", (taskId) => {
     tasks = tasks.filter((task) => task.id !== taskId);
-    io.emit("taskList", tasks); // Broadcast updated list
+    io.emit("taskList", tasks);
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected");
   });
 });
-
-console.log("WebSocket server running on port 4000");
